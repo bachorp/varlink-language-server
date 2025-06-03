@@ -1,0 +1,19 @@
+[package]
+name = "varlink-language-server"
+version = "0.1.0"
+license = "GPL-3.0"
+readme = "README.md"
+description = "Language Server for Varlink"
+repository = "https://github.com/bachorp/varlink-language-server"
+edition = "2024"
+
+[dependencies]
+auto-lsp = { version = "0.6.2", features = ["wasm", "lsp_server"] }
+tree-sitter-varlink = "0.4.0"
+
+[[bin]]
+name = "varlink-language-server"
+path = "src/main.rs"
+
+[workspace]
+members = ["codegen"]

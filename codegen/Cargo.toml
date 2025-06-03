@@ -1,0 +1,8 @@
+[package]
+name = "codegen"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+auto-lsp-codegen = "0.2.1"
+tree-sitter-varlink = "0.4.0"
