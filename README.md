@@ -8,3 +8,4 @@ Features:
 - Symbols
 - Semantic tokens
 - Go to definition
+- Formatting via [`varlinkfmt`](https://crates.io/crates/varlinkfmt)

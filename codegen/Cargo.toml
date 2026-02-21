@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 auto-lsp-codegen = "0.2.1"
-tree-sitter-varlink = "0.4.0"
+tree-sitter-varlink = "0.5"

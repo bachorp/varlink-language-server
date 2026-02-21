@@ -11,7 +11,7 @@ use auto_lsp::lsp_types::{
     Location, Position, Range, RelatedFullDocumentDiagnosticReport,
 };
 
-use crate::ast::{Enum, Eol, Error, Method, Struct, Typedef, Typeref};
+use crate::ast::{Enum, Error, Method, Struct, Typedef, Typeref};
 use crate::capabilities::util::get_file_from_db;
 
 pub fn diagnostics(
@@ -197,16 +197,12 @@ pub fn diagnostics(
     }
 
     if let Some(last) = ast.last() {
-        if !(last.lower().is::<Eol>()
-            // is top-level (below root)
-            && last.get_parent(ast).map(|node| node.get_id())
-                == ast.get_root().map(|node| node.get_id()))
-        {
+        let row_count = usize::from(document.texter.br_indexes.row_count());
+        if last.get_range().end_point.row + 1 == row_count {
             let end_of_document = Position {
-                line: usize::from(document.texter.br_indexes.row_count()).try_into()?,
+                line: row_count as u32,
                 character: 0,
             };
-
             items.push(Diagnostic {
                 range: Range {
                     start: end_of_document,

@@ -1,6 +1,6 @@
 [package]
 name = "varlink-language-server"
-version = "0.1.0"
+version = "0.1.1"
 license = "GPL-3.0"
 readme = "README.md"
 description = "Language Server for Varlink"
@@ -9,7 +9,8 @@ edition = "2024"
 
 [dependencies]
 auto-lsp = { version = "0.6.2", features = ["wasm", "lsp_server"] }
-tree-sitter-varlink = "0.4.0"
+tree-sitter-varlink = "0.5"
+varlinkfmt = "0.1"
 
 [[bin]]
 name = "varlink-language-server"

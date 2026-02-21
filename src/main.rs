@@ -10,7 +10,8 @@ use auto_lsp::lsp_types::notification::{
     DidOpenTextDocument, DidSaveTextDocument, LogTrace, SetTrace,
 };
 use auto_lsp::lsp_types::request::{
-    DocumentDiagnosticRequest, DocumentSymbolRequest, GotoDefinition, SemanticTokensFullRequest,
+    DocumentDiagnosticRequest, DocumentSymbolRequest, Formatting, GotoDefinition,
+    SemanticTokensFullRequest,
 };
 use auto_lsp::lsp_types::{self, OneOf};
 use auto_lsp::lsp_types::{DiagnosticOptions, DiagnosticServerCapabilities};
@@ -25,6 +26,7 @@ use std::error::Error;
 use std::panic::RefUnwindSafe;
 use varlink_language_server::capabilities::diagnostics::diagnostics;
 use varlink_language_server::capabilities::document_symbols::document_symbols;
+use varlink_language_server::capabilities::formatting::formatting;
 use varlink_language_server::capabilities::goto_definition::goto_definition;
 use varlink_language_server::capabilities::semantic_tokens::{
     SUPPORTED_TYPES, semantic_tokens_full,
@@ -70,6 +72,7 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
                 ),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(crate::OneOf::Left(true)),
+                document_formatting_provider: Some(OneOf::Left(true)),
                 ..Default::default()
             },
             server_info: None,
@@ -130,4 +133,5 @@ fn on_requests<Db: BaseDatabase + Clone + RefUnwindSafe>(
         .on::<DocumentSymbolRequest, _>(document_symbols)
         .on::<SemanticTokensFullRequest, _>(semantic_tokens_full)
         .on::<GotoDefinition, _>(goto_definition)
+        .on::<Formatting, _>(formatting)
 }
