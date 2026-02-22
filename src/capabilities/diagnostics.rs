@@ -148,6 +148,7 @@ pub fn diagnostics(
         }
     });
 
+    // TODO: Show error for multiply declared types at ref also
     typerefs.iter().for_each(|(name, occurences)| {
         if !typedefs.contains_key(name) {
             occurences.iter().for_each(|occurence| {

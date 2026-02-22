@@ -1,6 +1,11 @@
+pub mod completion;
 pub mod diagnostics;
 pub mod document_symbols;
+pub mod folding_range;
 pub mod formatting;
 pub mod goto_definition;
+pub mod hover;
+pub mod rename;
+pub mod selection_range;
 pub mod semantic_tokens;
 mod util;

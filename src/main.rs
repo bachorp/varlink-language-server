@@ -10,10 +10,11 @@ use auto_lsp::lsp_types::notification::{
     DidOpenTextDocument, DidSaveTextDocument, LogTrace, SetTrace,
 };
 use auto_lsp::lsp_types::request::{
-    DocumentDiagnosticRequest, DocumentSymbolRequest, Formatting, GotoDefinition,
+    Completion, DocumentDiagnosticRequest, DocumentSymbolRequest, FoldingRangeRequest, Formatting,
+    GotoDefinition, HoverRequest, PrepareRenameRequest, Rename, SelectionRangeRequest,
     SemanticTokensFullRequest,
 };
-use auto_lsp::lsp_types::{self, OneOf};
+use auto_lsp::lsp_types::{self, HoverProviderCapability, OneOf};
 use auto_lsp::lsp_types::{DiagnosticOptions, DiagnosticServerCapabilities};
 use auto_lsp::lsp_types::{
     ServerCapabilities, WorkspaceFoldersServerCapabilities, WorkspaceServerCapabilities,
@@ -26,8 +27,13 @@ use std::error::Error;
 use std::panic::RefUnwindSafe;
 use varlink_language_server::capabilities::diagnostics::diagnostics;
 use varlink_language_server::capabilities::document_symbols::document_symbols;
+use varlink_language_server::capabilities::completion::completion;
+use varlink_language_server::capabilities::folding_range::folding_range;
 use varlink_language_server::capabilities::formatting::formatting;
+use varlink_language_server::capabilities::rename::{prepare_rename, rename};
+use varlink_language_server::capabilities::selection_range::selection_range;
 use varlink_language_server::capabilities::goto_definition::goto_definition;
+use varlink_language_server::capabilities::hover::hover;
 use varlink_language_server::capabilities::semantic_tokens::{
     SUPPORTED_TYPES, semantic_tokens_full,
 };
@@ -72,7 +78,21 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
                 ),
                 document_symbol_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(crate::OneOf::Left(true)),
+                hover_provider: Some(HoverProviderCapability::Simple(true)),
                 document_formatting_provider: Some(OneOf::Left(true)),
+                folding_range_provider: Some(lsp_types::FoldingRangeProviderCapability::Simple(
+                    true,
+                )),
+                rename_provider: Some(lsp_types::OneOf::Right(lsp_types::RenameOptions {
+                    prepare_provider: Some(true),
+                    work_done_progress_options: Default::default(),
+                })),
+                selection_range_provider: Some(
+                    lsp_types::SelectionRangeProviderCapability::Simple(true),
+                ),
+                completion_provider: Some(lsp_types::CompletionOptions {
+                    ..Default::default()
+                }),
                 ..Default::default()
             },
             server_info: None,
@@ -133,5 +153,11 @@ fn on_requests<Db: BaseDatabase + Clone + RefUnwindSafe>(
         .on::<DocumentSymbolRequest, _>(document_symbols)
         .on::<SemanticTokensFullRequest, _>(semantic_tokens_full)
         .on::<GotoDefinition, _>(goto_definition)
+        .on::<HoverRequest, _>(hover)
         .on::<Formatting, _>(formatting)
+        .on::<FoldingRangeRequest, _>(folding_range)
+        .on::<Completion, _>(completion)
+        .on::<PrepareRenameRequest, _>(prepare_rename)
+        .on::<Rename, _>(rename)
+        .on::<SelectionRangeRequest, _>(selection_range)
 }
