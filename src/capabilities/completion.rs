@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet};
 
 use auto_lsp::{
     anyhow,
@@ -66,16 +66,16 @@ pub fn completion(
     db: &impl BaseDatabase,
     params: CompletionParams,
 ) -> anyhow::Result<Option<CompletionResponse>> {
-    let mut items: Vec<CompletionItem> = Vec::new();
-
     let file = get_file_from_db(&params.text_document_position.text_document.uri, db)?;
     let ast = get_ast(db, file);
     let document_bytes = file.document(db).as_bytes();
+
     let pos = params.text_document_position.position;
     let line = file.document(db).texter.get_row(pos.line as usize).unwrap();
 
-    // We always already typed 1 char
-    let line_before = &line[0..pos.character as usize - 1].trim();
+    let mut items: Vec<CompletionItem> = Vec::new();
+    let line_before = &line[0..pos.character as usize - 1].trim(); // Trim the single typed character
+    // We are on a blank line
     if *line_before == "" {
         for kind in DECLARATIONS {
             items.push(CompletionItem {
@@ -88,13 +88,23 @@ pub fn completion(
         }
     }
 
-    // NOTE: Does not work across lines (wich is possible with `:`)
+    // NOTE: Does not work across lines (would be allowed for `:`)
     if !line.contains("#")
         && (line_before.ends_with(":")
             || line_before.ends_with("?")
             || line_before.ends_with("[]")
             || line_before.ends_with("[string]"))
     {
+        for kind in BUILTIN_TYPES {
+            items.push(CompletionItem {
+                label: kind.label.to_string(),
+                kind: Some(CompletionItemKind::STRUCT),
+                insert_text: Some(kind.insert_text.to_string()),
+                insert_text_format: Some(InsertTextFormat::SNIPPET),
+                ..Default::default()
+            });
+        }
+
         let mut typedefs = HashSet::new();
         ast.iter().for_each(|node| {
             if let Some(typedef) = node.lower().downcast_ref::<Typedef>() {
@@ -110,15 +120,6 @@ pub fn completion(
                 }
             }
         });
-        for kind in BUILTIN_TYPES {
-            items.push(CompletionItem {
-                label: kind.label.to_string(),
-                kind: Some(CompletionItemKind::KEYWORD),
-                insert_text: Some(kind.insert_text.to_string()),
-                insert_text_format: Some(InsertTextFormat::SNIPPET),
-                ..Default::default()
-            });
-        }
     }
 
     Ok(Some(CompletionResponse::Array(items)))

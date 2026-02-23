@@ -12,7 +12,7 @@ pub fn formatting(
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let indent = match params.options.insert_spaces {
         false => varlinkfmt::Indent::Tab,
-        true => varlinkfmt::Indent::Spaces(params.options.tab_size.try_into().unwrap()),
+        true => varlinkfmt::Indent::Spaces(params.options.tab_size as usize),
     };
 
     let document = get_file_from_db(&params.text_document.uri, db)?.document(db);

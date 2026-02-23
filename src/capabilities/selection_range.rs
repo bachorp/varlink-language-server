@@ -17,26 +17,18 @@ pub fn selection_range(
     let file = get_file_from_db(&params.text_document.uri, db)?;
     let ast = get_ast(db, file);
 
-    let results = params
-        .positions
-        .iter()
-        .map(|&pos| {
-            let leaf = leaf_at(&ast.nodes, pos.line, pos.character).unwrap();
-            SelectionRange {
-                range: leaf.get_lsp_range(),
-                parent: mk_parent(leaf, ast),
-            }
-        })
-        .collect();
-
-    Ok(Some(results))
+    Ok(Some(
+        params
+            .positions
+            .iter()
+            .map(|&pos| mk_range(leaf_at(&ast.nodes, pos).unwrap(), ast))
+            .collect(),
+    ))
 }
 
-fn mk_parent(node: &Box<dyn AstNode>, ast: &ParsedAst) -> Option<Box<SelectionRange>> {
-    node.get_parent(ast).map(|p| {
-        Box::new(SelectionRange {
-            range: p.get_lsp_range(),
-            parent: mk_parent(p, ast),
-        })
-    })
+fn mk_range(node: &Box<dyn AstNode>, ast: &ParsedAst) -> SelectionRange {
+    SelectionRange {
+        range: node.get_lsp_range(),
+        parent: node.get_parent(ast).map(|p| Box::new(mk_range(p, ast))),
+    }
 }
