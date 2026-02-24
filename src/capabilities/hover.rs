@@ -15,9 +15,10 @@ pub fn hover(db: &impl BaseDatabase, params: HoverParams) -> anyhow::Result<Opti
     let ast = get_ast(db, file);
     let document_bytes = file.document(db).as_bytes();
 
-    let leaf = leaf_at(&ast.nodes, params.text_document_position_params.position)
-        .unwrap()
-        .lower();
+    let leaf = leaf_at(&ast.nodes, params.text_document_position_params.position);
+    let Some(leaf) = leaf else { return Ok(None) };
+    let leaf = leaf.lower();
+    // TODO: We could have a hover in many more cases
     if !leaf.is::<Name>() && !leaf.is::<InterfaceName>() {
         return Ok(None);
     }
@@ -74,7 +75,7 @@ pub fn hover(db: &impl BaseDatabase, params: HoverParams) -> anyhow::Result<Opti
     if !comments_rev.is_empty() {
         value.push_str("\n\n---\n");
         for line in comments_rev.iter().rev() {
-            // FIXME: Use `trim_prefix` when available (https://github.com/rust-lang/rust/issues/142312)
+            // TODO: Use `trim_prefix` when available (https://github.com/rust-lang/rust/issues/142312)
             value.push_str(
                 line.trim_start_matches("#")
                     .strip_prefix(" ")

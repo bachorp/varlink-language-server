@@ -5,6 +5,7 @@ pub mod folding_range;
 pub mod formatting;
 pub mod goto_definition;
 pub mod hover;
+pub mod references;
 pub mod rename;
 pub mod selection_range;
 pub mod semantic_tokens;

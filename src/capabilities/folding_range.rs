@@ -16,25 +16,29 @@ pub fn folding_range(
     let file = get_file_from_db(&params.text_document.uri, db)?;
     let ast = get_ast(db, file);
 
-    let mut ranges = Vec::new();
-    ast.iter().for_each(|node| {
-        let node = node.lower();
-        if node.is::<Method>()
-            || node.is::<Error>()
-            || node.is::<Typedef>()
-            || node.is::<Struct>()
-            || node.is::<Enum>()
-        {
-            let range = node.get_lsp_range();
-            ranges.push(FoldingRange {
-                start_line: range.start.line,
-                start_character: Some(range.start.character),
-                end_line: range.end.line,
-                end_character: Some(range.end.character),
-                ..Default::default()
-            });
-        }
-    });
+    let ranges = ast
+        .iter()
+        .filter_map(|node| {
+            let node = node.lower();
+            if node.is::<Method>()
+                || node.is::<Error>()
+                || node.is::<Typedef>()
+                || node.is::<Struct>()
+                || node.is::<Enum>()
+            {
+                let range = node.get_lsp_range();
+                Some(FoldingRange {
+                    start_line: range.start.line,
+                    start_character: Some(range.start.character),
+                    end_line: range.end.line,
+                    end_character: Some(range.end.character),
+                    ..Default::default()
+                })
+            } else {
+                None
+            }
+        })
+        .collect();
 
     Ok(Some(ranges))
 }

@@ -10,7 +10,7 @@ edition = "2024"
 [dependencies]
 auto-lsp = { version = "0.6.2", features = ["wasm", "lsp_server"] }
 tree-sitter-varlink = "0.5"
-varlinkfmt = "0.1"
+varlinkfmt-core = "0.2"
 
 [[bin]]
 name = "varlink-language-server"

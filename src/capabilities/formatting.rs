@@ -3,6 +3,7 @@ use auto_lsp::{
     default::db::BaseDatabase,
     lsp_types::{DocumentFormattingParams, Position, Range, TextEdit},
 };
+use varlinkfmt_core::{Indent, format, mk_language};
 
 use crate::capabilities::util::get_file_from_db;
 
@@ -11,12 +12,12 @@ pub fn formatting(
     params: DocumentFormattingParams,
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let indent = match params.options.insert_spaces {
-        false => varlinkfmt::Indent::Tab,
-        true => varlinkfmt::Indent::Spaces(params.options.tab_size as usize),
+        false => Indent::Tab,
+        true => Indent::Spaces(params.options.tab_size as usize),
     };
 
     let document = get_file_from_db(&params.text_document.uri, db)?.document(db);
-    let formatted = varlinkfmt::format(&varlinkfmt::mk_language(indent), &mut document.as_bytes())
+    let formatted = format(&mk_language(indent), &mut document.as_bytes())
         .map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
     Ok(Some(vec![TextEdit::new(

@@ -1,4 +1,4 @@
-use std::{collections::HashSet};
+use std::collections::HashSet;
 
 use auto_lsp::{
     anyhow,
@@ -106,8 +106,9 @@ pub fn completion(
         }
 
         let mut typedefs = HashSet::new();
-        ast.iter().for_each(|node| {
-            if let Some(typedef) = node.lower().downcast_ref::<Typedef>() {
+        ast.iter()
+            .filter_map(|node| node.lower().downcast_ref::<Typedef>())
+            .for_each(|typedef| {
                 if let Ok(name) = typedef.name.cast(ast).get_text(document_bytes)
                     && !typedefs.contains(name)
                 {
@@ -118,8 +119,7 @@ pub fn completion(
                         ..Default::default()
                     });
                 }
-            }
-        });
+            });
     }
 
     Ok(Some(CompletionResponse::Array(items)))
