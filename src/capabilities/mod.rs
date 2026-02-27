@@ -1,6 +1,6 @@
 pub mod completion;
 pub mod diagnostics;
-pub mod document_symbols;
+pub mod symbols;
 pub mod folding_range;
 pub mod formatting;
 pub mod goto_definition;

@@ -9,7 +9,7 @@ use auto_lsp::{
 
 pub fn get_file_from_db(uri: &Url, db: &impl BaseDatabase) -> Result<File, anyhow::Error> {
     db.get_file(uri)
-        .ok_or_else(|| anyhow::format_err!("File not found in database: {}", uri))
+        .ok_or_else(|| anyhow::format_err!("Unknown file: {}", uri))
 }
 
 // Note that the given nodes are assumed to be ordered by their starting position

@@ -61,7 +61,8 @@ pub fn rename(
             }
 
             if let Some(typeref) = lower.downcast_ref::<Typeref>() {
-                if typeref.get_text(document_bytes).unwrap() == old_name {
+                let name = typeref.children.cast(ast);
+                if name.get_text(document_bytes).unwrap() == old_name {
                     edits.push(TextEdit::new(
                         typeref.get_lsp_range(),
                         params.new_name.clone(),
