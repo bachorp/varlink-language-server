@@ -2,14 +2,20 @@ use auto_lsp::{
     anyhow,
     core::ast::AstNode,
     default::db::{BaseDatabase, file::File},
-    lsp_types::{Position, Url},
+    lsp_types::{Position, SemanticTokenType, Url},
 };
+
+use crate::capabilities::semantic_tokens::SUPPORTED_TYPES;
 
 // It would be great to have some of these upstream
 
 pub fn get_file_from_db(uri: &Url, db: &impl BaseDatabase) -> Result<File, anyhow::Error> {
     db.get_file(uri)
         .ok_or_else(|| anyhow::format_err!("Unknown file: {}", uri))
+}
+
+pub fn get_token_index(type_: SemanticTokenType) -> u32 {
+    SUPPORTED_TYPES.iter().position(|x| *x == type_).unwrap() as u32
 }
 
 // Note that the given nodes are assumed to be ordered by their starting position

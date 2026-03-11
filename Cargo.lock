@@ -1500,9 +1500,9 @@ checksum = "009994f150cc0cd50ff54917d5bc8bffe8cad10ca10d81c34da2ec421ae61782"
 
 [[package]]
 name = "tree-sitter-varlink"
-version = "0.5.1"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a89f98866c034ff9080fb3d73db779fdb7be556b4e96975127789ab63f32c3d8"
+checksum = "3ffb2fd9eb5026a156244fc1cbd3f4ef25f7fa99723112ff1736a074d28e2244"
 dependencies = [
  "cc",
  "tree-sitter-language",
@@ -1562,9 +1562,9 @@ dependencies = [
 
 [[package]]
 name = "varlinkfmt-core"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b788c8a0b3a9a8217f832ef8908ac685bd09b55e7c70406360c7a7c2346fd71"
+checksum = "cbc414a72f3849bc18f24356aac71e5597cb280fcd32fc178e0d1552e1dc8127"
 dependencies = [
  "topiary-core",
  "tree-sitter-varlink",

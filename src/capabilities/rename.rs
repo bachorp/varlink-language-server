@@ -21,6 +21,7 @@ pub fn prepare_rename(
 
     if let Some(leaf) = leaf_at(ast, params.position) {
         let leaf = leaf.lower();
+        // TODO: A more robust approach would be to walk up from here
         if leaf.is::<Name>() || leaf.is::<InterfaceName>() {
             return Ok(Some(PrepareRenameResponse::Range(leaf.get_lsp_range())));
         }

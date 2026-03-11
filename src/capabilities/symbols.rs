@@ -4,7 +4,6 @@ use crate::ast::{Error, InterfaceDeclaration, Method, Typedef};
 use crate::capabilities::util::get_file_from_db;
 use auto_lsp::core::ast::AstNode;
 use auto_lsp::core::dispatch_once;
-use auto_lsp::core::document::Document;
 use auto_lsp::core::document_symbols_builder::DocumentSymbolsBuilder;
 use auto_lsp::default::db::BaseDatabase;
 use auto_lsp::default::db::file::File;
@@ -17,17 +16,18 @@ use auto_lsp::{anyhow, lsp_types};
 
 fn _symbols(db: &impl BaseDatabase, file: &File) -> Vec<DocumentSymbol> {
     let doc = file.document(db);
-    let mut builder = DocumentSymbolsBuilder::default();
-
     let ast = get_ast(db, *file);
+    let document_bytes = doc.as_bytes();
+
+    let mut builder = DocumentSymbolsBuilder::default();
     ast.iter().for_each(|node| {
         dispatch_once!(
             node.lower(),
             [
-                InterfaceDeclaration => build_document_symbols(&doc, ast, &mut builder),
-                Error => build_document_symbols(&doc, ast, &mut builder),
-                Typedef => build_document_symbols(&doc, ast, &mut builder),
-                Method => build_document_symbols(&doc, ast, &mut builder)
+                InterfaceDeclaration => build_document_symbols(&mut builder, ast, document_bytes),
+                Error => build_document_symbols(&mut builder, ast, document_bytes),
+                Typedef => build_document_symbols(&mut builder, ast, document_bytes),
+                Method => build_document_symbols(&mut builder, ast, document_bytes)
             ]
         );
     });
@@ -37,13 +37,13 @@ fn _symbols(db: &impl BaseDatabase, file: &File) -> Vec<DocumentSymbol> {
 impl InterfaceDeclaration {
     pub(crate) fn build_document_symbols(
         &self,
-        doc: &Document,
-        ast: &ParsedAst,
         builder: &mut DocumentSymbolsBuilder,
+        ast: &ParsedAst,
+        document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
         builder.push_symbol(lsp_types::DocumentSymbol {
-            name: name.get_text(doc.as_bytes()).unwrap().to_string(),
+            name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::NAMESPACE,
             range: self.get_lsp_range(),
             selection_range: name.get_lsp_range(),
@@ -58,13 +58,13 @@ impl InterfaceDeclaration {
 impl Error {
     pub(crate) fn build_document_symbols(
         &self,
-        doc: &Document,
-        ast: &ParsedAst,
         builder: &mut DocumentSymbolsBuilder,
+        ast: &ParsedAst,
+        document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
         builder.push_symbol(lsp_types::DocumentSymbol {
-            name: name.get_text(doc.as_bytes()).unwrap().to_string(),
+            name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::EVENT,
             range: self.get_lsp_range(),
             selection_range: name.get_lsp_range(),
@@ -79,13 +79,13 @@ impl Error {
 impl Method {
     pub(crate) fn build_document_symbols(
         &self,
-        doc: &Document,
-        ast: &ParsedAst,
         builder: &mut DocumentSymbolsBuilder,
+        ast: &ParsedAst,
+        document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
         builder.push_symbol(lsp_types::DocumentSymbol {
-            name: name.get_text(doc.as_bytes()).unwrap().to_string(),
+            name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::METHOD,
             range: self.get_lsp_range(),
             selection_range: name.get_lsp_range(),
@@ -100,13 +100,13 @@ impl Method {
 impl Typedef {
     pub(crate) fn build_document_symbols(
         &self,
-        doc: &Document,
-        ast: &ParsedAst,
         builder: &mut DocumentSymbolsBuilder,
+        ast: &ParsedAst,
+        document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
         builder.push_symbol(lsp_types::DocumentSymbol {
-            name: name.get_text(doc.as_bytes()).unwrap().to_string(),
+            name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::CLASS,
             range: self.get_lsp_range(),
             selection_range: name.get_lsp_range(),
@@ -142,7 +142,7 @@ pub fn workspace_symbols(
                 .map(|p| WorkspaceSymbol {
                     name: p.name,
                     kind: p.kind,
-                    tags: None,
+                    tags: p.tags,
                     container_name: None,
                     location: OneOf::Left(Location {
                         uri: url.to_owned(),
