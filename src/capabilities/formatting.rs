@@ -1,9 +1,10 @@
 use auto_lsp::{
     anyhow,
-    default::db::BaseDatabase,
+    core::errors::ParseErrorAccumulator,
+    default::db::{BaseDatabase, tracked::get_ast},
     lsp_types::{DocumentFormattingParams, Position, Range, TextEdit},
 };
-use varlinkfmt_core::{Indent, format, mk_language};
+use varlinkfmt_core::{Indent, formatter_tree, mk_language};
 
 use crate::capabilities::util::get_file_from_db;
 
@@ -11,14 +12,30 @@ pub fn formatting(
     db: &impl BaseDatabase,
     params: DocumentFormattingParams,
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
-    let indent = match params.options.insert_spaces {
-        false => Indent::Tab,
-        true => Indent::Spaces(params.options.tab_size as usize),
-    };
+    let file = get_file_from_db(&params.text_document.uri, db)?;
+    if get_ast::accumulated::<ParseErrorAccumulator>(db, file)
+        .into_iter()
+        .peekable()
+        .peek()
+        .is_some()
+    {
+        return Ok(None);
+    }
 
-    let document = get_file_from_db(&params.text_document.uri, db)?.document(db);
-    let formatted = format(&mk_language(indent), &mut document.as_bytes())
-        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let document = file.document(db);
+
+    let mut output = Vec::new();
+    formatter_tree(
+        document.tree.clone().into(),
+        &document.as_str(),
+        &mut output,
+        &mk_language(match params.options.insert_spaces {
+            false => Indent::Tab,
+            true => Indent::Spaces(params.options.tab_size as usize),
+        }),
+        Default::default(),
+    )
+    .map_err(|err| anyhow::anyhow!(err.to_string()))?;
 
     Ok(Some(vec![TextEdit::new(
         Range {
@@ -31,6 +48,6 @@ pub fn formatting(
                 character: 0,
             },
         },
-        formatted,
+        String::from_utf8(output).unwrap(),
     )]))
 }

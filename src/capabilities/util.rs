@@ -67,17 +67,16 @@ pub fn most_specific_at<'a>(
     prec_at(nodes, pos).and_then(|candidate| walk_up(nodes, candidate, pos))
 }
 
-// Finds the deepest node of some type at the given position
-pub fn capture_at<'a, T: AstNode>(nodes: &'a [Box<dyn AstNode>], pos: Position) -> Option<&'a T> {
-    fn walk_up<'a, T: AstNode>(
+pub fn walk_up<'a, T: AstNode>(
         nodes: &'a [Box<dyn AstNode>],
         node: &'a Box<dyn AstNode>,
-        pos: Position,
     ) -> Option<&'a T> {
         node.lower()
             .downcast_ref::<T>()
-            .or(node.get_parent(nodes).and_then(|p| walk_up(nodes, p, pos)))
+            .or(node.get_parent(nodes).and_then(|p| walk_up(nodes, p)))
     }
 
-    most_specific_at(nodes, pos).and_then(|n| walk_up::<T>(nodes, n, pos))
+// Finds the deepest node of some type at the given position
+pub fn capture_at<'a, T: AstNode>(nodes: &'a [Box<dyn AstNode>], pos: Position) -> Option<&'a T> {
+    most_specific_at(nodes, pos).and_then(|n| walk_up::<T>(nodes, n))
 }

@@ -1562,11 +1562,12 @@ dependencies = [
 
 [[package]]
 name = "varlinkfmt-core"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbc414a72f3849bc18f24356aac71e5597cb280fcd32fc178e0d1552e1dc8127"
+checksum = "b36101b9f85479569ed51d50efcdf41aaacf2e154cc818e17429c62d843e1f29"
 dependencies = [
  "topiary-core",
+ "topiary-tree-sitter-facade",
  "tree-sitter-varlink",
 ]
 
