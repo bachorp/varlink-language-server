@@ -23,6 +23,7 @@ use auto_lsp::server::Session;
 use auto_lsp::server::notification_registry::NotificationRegistry;
 use auto_lsp::server::options::InitOptions;
 use auto_lsp::server::request_registry::RequestRegistry;
+use auto_lsp::server::vendored::intent::ThreadIntent;
 use std::error::Error;
 use std::panic::RefUnwindSafe;
 use varlink_language_server::capabilities::completion::completion;
@@ -135,28 +136,28 @@ fn on_notifications<Db: BaseDatabase + Clone + RefUnwindSafe>(
         .on_mut::<DidChangeTextDocument, _>(|s, p| Ok(change_text_document(s, p)?))
         .on_mut::<DidChangeWatchedFiles, _>(|s, p| Ok(changed_watched_files(s, p)?))
         .on_mut::<DidOpenTextDocument, _>(|s, p| Ok(open_text_document(s, p)?))
-        .on::<DidCloseTextDocument, _>(|_s, _p| Ok(()))
-        .on::<DidSaveTextDocument, _>(|_s, _p| Ok(()))
-        .on::<LogTrace, _>(|_s, _p| Ok(()))
-        .on::<SetTrace, _>(|_s, _p| Ok(()))
+        .on::<DidCloseTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
+        .on::<DidSaveTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
+        .on::<LogTrace, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
+        .on::<SetTrace, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
 }
 
 fn on_requests<Db: BaseDatabase + Clone + RefUnwindSafe>(
     registry: &mut RequestRegistry<Db>,
 ) -> &mut RequestRegistry<Db> {
     registry
-        .on::<Completion, _>(completion)
-        .on::<DocumentDiagnosticRequest, _>(diagnostics)
-        .on::<DocumentSymbolRequest, _>(document_symbols)
-        .on::<FoldingRangeRequest, _>(folding_range)
-        .on::<Formatting, _>(formatting)
-        .on::<GotoDefinition, _>(goto_definition)
-        .on::<HoverRequest, _>(hover)
-        .on::<PrepareRenameRequest, _>(prepare_rename)
-        .on::<References, _>(references)
-        .on::<Rename, _>(rename)
-        .on::<SelectionRangeRequest, _>(selection_range)
-        .on::<SemanticTokensFullRequest, _>(semantic_tokens_full)
-        .on::<WorkspaceDiagnosticRequest, _>(workspace_diagnostics)
-        .on::<WorkspaceSymbolRequest, _>(workspace_symbols)
+        .on::<Completion, _>(ThreadIntent::Worker, completion)
+        .on::<DocumentDiagnosticRequest, _>(ThreadIntent::Worker, diagnostics)
+        .on::<DocumentSymbolRequest, _>(ThreadIntent::Worker, document_symbols)
+        .on::<FoldingRangeRequest, _>(ThreadIntent::Worker, folding_range)
+        .on::<Formatting, _>(ThreadIntent::Worker, formatting)
+        .on::<GotoDefinition, _>(ThreadIntent::Worker, goto_definition)
+        .on::<HoverRequest, _>(ThreadIntent::Worker, hover)
+        .on::<PrepareRenameRequest, _>(ThreadIntent::Worker, prepare_rename)
+        .on::<References, _>(ThreadIntent::Worker, references)
+        .on::<Rename, _>(ThreadIntent::Worker, rename)
+        .on::<SelectionRangeRequest, _>(ThreadIntent::Worker, selection_range)
+        .on::<SemanticTokensFullRequest, _>(ThreadIntent::Worker, semantic_tokens_full)
+        .on::<WorkspaceDiagnosticRequest, _>(ThreadIntent::Worker, workspace_diagnostics)
+        .on::<WorkspaceSymbolRequest, _>(ThreadIntent::Worker, workspace_symbols)
 }

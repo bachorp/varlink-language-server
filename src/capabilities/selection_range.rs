@@ -21,7 +21,7 @@ pub fn selection_range(
         params
             .positions
             .iter()
-            .filter_map(|&pos| most_specific_at(&ast.nodes, pos).map(|node| mk_range(node, ast)))
+            .filter_map(|&pos| most_specific_at(ast, pos).map(|node| mk_range(node, ast)))
             .collect(),
     ))
 }
