@@ -1,16 +1,19 @@
 # Varlink Language Server
 
-Features:
+Formatter for [Varlink](https://varlink.org).
+Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](https://github.com/bachorp/tree-sitter-varlink).
+
+## Features
 
 - Diagnostics (including workspace)
     - Syntax errors
     - Missing/duplicate declarations
-- Symbols (including workspace)
-- Semantic tokens
-- Go to definition
-- Formatting via [`varlinkfmt`](https://crates.io/crates/varlinkfmt)
 - Completion
+- Formatting via [`varlinkfmt`](https://crates.io/crates/varlinkfmt)
+- Go to definition
 - Hover
-- Selection range
-- Rename symbol
 - References
+- Rename symbol
+- Selection range
+- Semantic tokens
+- Symbols (including workspace)
