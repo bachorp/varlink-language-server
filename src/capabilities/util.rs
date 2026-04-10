@@ -74,3 +74,9 @@ pub fn walk_up<'a, T: AstNode>(ast: &'a ParsedAst, node: &'a dyn AstNode) -> Opt
 pub fn capture_at<'a, T: AstNode>(ast: &'a ParsedAst, pos: Position) -> Option<&'a T> {
     most_specific_at(ast, pos).and_then(|n| walk_up::<T>(ast, n.lower()))
 }
+
+// TODO: It would be preferable to go through tree-sitter
+pub fn is_missing(node: &dyn AstNode) -> bool {
+    let span = node.get_span();
+    span.start_byte == span.end_byte
+}

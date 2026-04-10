@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 
 use crate::ast::{Error, InterfaceDeclaration, Method, Typedef};
-use crate::capabilities::util::get_file_from_db;
+use crate::capabilities::util::{get_file_from_db, is_missing};
 use auto_lsp::core::ast::AstNode;
 use auto_lsp::core::dispatch_once;
 use auto_lsp::core::document_symbols_builder::DocumentSymbolsBuilder;
@@ -42,6 +42,10 @@ impl InterfaceDeclaration {
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
+        if is_missing(name) {
+            return;
+        }
+
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::NAMESPACE,
@@ -63,6 +67,10 @@ impl Error {
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
+        if is_missing(name) {
+            return;
+        }
+
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::EVENT,
@@ -84,6 +92,10 @@ impl Method {
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
+        if is_missing(name) {
+            return;
+        }
+
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::METHOD,
@@ -105,6 +117,10 @@ impl Typedef {
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
+        if is_missing(name) {
+            return;
+        }
+
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::CLASS,
