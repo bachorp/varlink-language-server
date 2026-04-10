@@ -24,6 +24,7 @@ use auto_lsp::server::notification_registry::NotificationRegistry;
 use auto_lsp::server::options::InitOptions;
 use auto_lsp::server::request_registry::RequestRegistry;
 use auto_lsp::server::vendored::intent::ThreadIntent;
+use lsp_types::ServerInfo;
 use std::error::Error;
 use std::panic::RefUnwindSafe;
 use varlink_language_server::capabilities::completion::completion;
@@ -56,6 +57,10 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
 
     let (mut session, params) = Session::create(
         InitOptions {
+            server_info: Some(ServerInfo {
+                name: "varlink-language-server".into(),
+                version: Some(env!("CARGO_PKG_VERSION").into()),
+            }),
             parsers: &PARSERS,
             capabilities: ServerCapabilities {
                 text_document_sync: TEXT_DOCUMENT_SYNC.clone(),
@@ -92,7 +97,6 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
                 }),
                 ..Default::default()
             },
-            server_info: None,
         },
         connection,
         db,
