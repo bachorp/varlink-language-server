@@ -1,3 +1,4 @@
+use auto_lsp::anyhow::{self};
 use auto_lsp::default::db::{BaseDatabase, BaseDb};
 use auto_lsp::default::server::capabilities::{
     TEXT_DOCUMENT_SYNC, WORKSPACE_PROVIDER, semantic_tokens_provider,
@@ -51,10 +52,7 @@ auto_lsp::configure_parsers!(
     }
 );
 
-fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
-    let (connection, io_threads) = Connection::stdio();
-    let db = BaseDb::default();
-
+fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
     let (mut session, params) = Session::create(
         InitOptions {
             server_info: Some(ServerInfo {
@@ -115,9 +113,14 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
     session.main_loop(
         on_requests(&mut request_registry),
         on_notifications(&mut notification_registry),
-    )?;
-    io_threads.join()?;
+    )
+}
 
+fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
+    let (connection, io_threads) = Connection::stdio();
+    let db = BaseDb::default();
+    main_loop(connection, db)?;
+    io_threads.join()?;
     Ok(())
 }
 
