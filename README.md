@@ -1,6 +1,6 @@
 # Varlink Language Server
 
-Formatter for [Varlink](https://varlink.org).
+Language server for [Varlink](https://varlink.org).
 Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](https://github.com/bachorp/tree-sitter-varlink).
 
 ## Features
@@ -17,3 +17,8 @@ Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](ht
 - Selection range
 - Semantic tokens
 - Symbols (including workspace)
+
+## Known Issues
+
+- https://github.com/adclz/auto-lsp/issues/47
+- https://github.com/adclz/auto-lsp/issues/39#issuecomment-4114707968
