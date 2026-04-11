@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 
 use crate::ast::{Error, InterfaceDeclaration, Method, Typedef};
-use crate::capabilities::util::{get_file_from_db, is_missing};
+use crate::capabilities::util::get_file_from_db;
 use auto_lsp::core::ast::AstNode;
 use auto_lsp::core::dispatch_once;
 use auto_lsp::core::document_symbols_builder::DocumentSymbolsBuilder;
@@ -42,7 +42,7 @@ impl InterfaceDeclaration {
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
-        if is_missing(name) {
+        if name.is_missing() {
             return;
         }
 
@@ -66,8 +66,8 @@ impl Error {
         ast: &ParsedAst,
         document_bytes: &[u8],
     ) {
-        let name = self.name.cast(ast);
-        if is_missing(name) {
+        let name = self.name.cast(ast).children.cast(ast);
+        if name.is_missing() {
             return;
         }
 
@@ -91,8 +91,8 @@ impl Method {
         ast: &ParsedAst,
         document_bytes: &[u8],
     ) {
-        let name = self.name.cast(ast);
-        if is_missing(name) {
+        let name = self.name.cast(ast).children.cast(ast);
+        if name.is_missing() {
             return;
         }
 
@@ -116,8 +116,8 @@ impl Typedef {
         ast: &ParsedAst,
         document_bytes: &[u8],
     ) {
-        let name = self.name.cast(ast);
-        if is_missing(name) {
+        let name = self.name.cast(ast).children.cast(ast);
+        if name.is_missing() {
             return;
         }
 
