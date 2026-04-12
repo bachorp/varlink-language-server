@@ -222,6 +222,23 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
     };
 
     items.append(&mut check_typerefs(&typedefs, &typerefs, uri));
+    items.extend(
+        typedefs
+            .iter()
+            .filter_map(|(name, defs)| {
+                if typerefs.contains_key(name) {
+                    None
+                } else {
+                    Some(defs.iter().map(move |range| Diagnostic {
+                        range: *range,
+                        severity: Some(DiagnosticSeverity::WARNING),
+                        message: format!("type `{}` is not used", name),
+                        ..Diagnostic::default()
+                    }))
+                }
+            })
+            .flatten(),
+    );
 
     ast.iter().for_each(|node| {
         if let Some(struct_) = node.lower().downcast_ref::<Struct>() {
