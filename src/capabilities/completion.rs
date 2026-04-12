@@ -9,7 +9,7 @@ use auto_lsp::{
     },
 };
 
-use crate::{ast::Typedef, capabilities::util::get_file_from_db};
+use crate::{ast::Typedef, util::get_file_from_db};
 
 struct Snippet {
     label: &'static str,

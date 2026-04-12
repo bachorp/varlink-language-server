@@ -6,7 +6,7 @@ use auto_lsp::{
 };
 use varlinkfmt_core::{Indent, formatter_tree, mk_language};
 
-use crate::capabilities::util::get_file_from_db;
+use crate::util::get_file_from_db;
 
 pub fn formatting(
     db: &impl BaseDatabase,

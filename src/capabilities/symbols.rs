@@ -1,7 +1,7 @@
 #![allow(deprecated)]
 
 use crate::ast::{Error, InterfaceDeclaration, Method, Typedef};
-use crate::capabilities::util::get_file_from_db;
+use crate::util::get_file_from_db;
 use auto_lsp::core::ast::AstNode;
 use auto_lsp::core::dispatch_once;
 use auto_lsp::core::document_symbols_builder::DocumentSymbolsBuilder;

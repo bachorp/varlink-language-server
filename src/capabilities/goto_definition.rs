@@ -7,7 +7,7 @@ use auto_lsp::{
 
 use crate::{
     ast::{Typedef, Typeref},
-    capabilities::util::{capture_at, get_file_from_db},
+    util::{capture_at, get_file_from_db},
 };
 
 pub fn goto_definition(

@@ -6,7 +6,7 @@ use auto_lsp::{
 
 use crate::{
     ast::{Enum, Error, Method, Struct, Typedef},
-    capabilities::util::get_file_from_db,
+    util::get_file_from_db,
 };
 
 pub fn folding_range(

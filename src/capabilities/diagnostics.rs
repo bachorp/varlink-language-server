@@ -16,7 +16,7 @@ use auto_lsp::lsp_types::{
 use auto_lsp::{anyhow, lsp_types};
 
 use crate::ast::{Enum, Error, Method, Struct, Typedef, Typeref};
-use crate::capabilities::util::get_file_from_db;
+use crate::util::get_file_from_db;
 
 fn get_parse_errors(db: &impl BaseDatabase, file: File) -> Vec<Diagnostic> {
     let mut error_positions: BTreeSet<(Position, Position)> = BTreeSet::new();

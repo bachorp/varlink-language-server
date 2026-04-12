@@ -13,7 +13,7 @@ use auto_lsp::{
 
 use crate::{
     ast::{ErrorName, InterfaceName, MethodName, Typedef, TypedefName, Typeref},
-    capabilities::util::{get_file_from_db, leaf_at, walk_up},
+    util::{get_file_from_db, leaf_at, walk_up},
 };
 
 fn find_type(ast: &ParsedAst, document_bytes: &[u8], old_name: &str) -> Option<Vec<Range>> {

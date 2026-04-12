@@ -9,4 +9,3 @@ pub mod references;
 pub mod rename;
 pub mod selection_range;
 pub mod semantic_tokens;
-mod util;

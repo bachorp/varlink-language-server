@@ -8,7 +8,7 @@ use auto_lsp::{
     lsp_types::{SelectionRange, SelectionRangeParams},
 };
 
-use crate::capabilities::util::{get_file_from_db, most_specific_at};
+use crate::util::{get_file_from_db, most_specific_at};
 
 pub fn selection_range(
     db: &impl BaseDatabase,

@@ -15,7 +15,7 @@ use crate::{
         InterfaceName, KeywordError, KeywordInterface, KeywordMethod, KeywordType, Method,
         MethodName, Object, StructField, StructFieldName, Typedef, TypedefName, Typeref,
     },
-    capabilities::util::{get_file_from_db, leaf_at, walk_up},
+    util::{get_file_from_db, leaf_at, walk_up},
 };
 
 // It would be great to utilize partial formatting for this but this is hard to achieve with Topiary

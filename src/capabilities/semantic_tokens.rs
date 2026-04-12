@@ -10,7 +10,7 @@ use crate::{
     ast::{
         Any, Arrow, Bool, Comment, EnumMemberName, ErrorName, Float, Int, InterfaceName, KeywordError, KeywordInterface, KeywordMethod, KeywordType, MethodName, Object, String, StructFieldName, TypedefName, Typeref
     },
-    capabilities::util::get_token_index,
+    util::{get_token_index, get_file_from_db}
 };
 
 define_semantic_token_types![
@@ -34,7 +34,7 @@ pub fn semantic_tokens_full(
     db: &impl BaseDatabase,
     params: SemanticTokensParams,
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
-    let file = crate::capabilities::util::get_file_from_db(&params.text_document.uri, db)?;
+    let file = get_file_from_db(&params.text_document.uri, db)?;
     let ast = get_ast(db, file);
 
     let mut builder = SemanticTokensBuilder::new("".into());
