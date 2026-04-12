@@ -5,7 +5,7 @@ use auto_lsp::core::document::Document;
 use auto_lsp::core::errors::ParseErrorAccumulator;
 use auto_lsp::default::db::BaseDatabase;
 use auto_lsp::default::db::file::File;
-use auto_lsp::default::db::tracked::{ParsedAst, get_ast};
+use auto_lsp::default::db::tracked::{get_ast};
 use auto_lsp::lsp_types::{
     Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, DocumentDiagnosticParams,
     DocumentDiagnosticReport, DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
@@ -39,24 +39,22 @@ fn get_parse_errors(db: &impl BaseDatabase, file: File) -> Vec<Diagnostic> {
         .collect()
 }
 
-fn check_trailing_newline(ast: &ParsedAst, document: &Document) -> Vec<Diagnostic> {
-    if let Some(last) = ast.last() {
-        let row_count = usize::from(document.texter.br_indexes.row_count());
-        if last.get_range().end_point.row + 1 == row_count {
-            let end_of_document = Position {
-                line: row_count as u32,
-                character: 0,
-            };
-            return vec![Diagnostic {
-                range: Range {
-                    start: end_of_document,
-                    end: end_of_document,
-                },
-                severity: Some(DiagnosticSeverity::ERROR),
-                message: "missing trailing newline".into(),
-                ..Diagnostic::default()
-            }];
-        }
+fn check_trailing_newline(document: &Document) -> Vec<Diagnostic> {
+    if document.texter.text.chars().last().map(|last| last == '\n') == Some(false) {
+        // FIXME: encoding is off
+        let end_of_document = Position {
+            line: usize::from(document.texter.br_indexes.row_count()) as u32,
+            character: 0,
+        };
+        return vec![Diagnostic {
+            range: Range {
+                start: end_of_document,
+                end: end_of_document,
+            },
+            severity: Some(DiagnosticSeverity::WARNING),
+            message: "missing trailing newline".into(),
+            ..Diagnostic::default()
+        }];
     }
 
     return Vec::new();
@@ -153,7 +151,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
 
     let mut items: Vec<Diagnostic> = Vec::new();
     items.append(&mut get_parse_errors(db, *file));
-    items.append(&mut check_trailing_newline(ast, document));
+    items.append(&mut check_trailing_newline(document));
 
     let typedefs = {
         let mut result = HashMap::new();
