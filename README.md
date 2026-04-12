@@ -11,6 +11,7 @@ Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](ht
 - Completion
 - Formatting via [`varlinkfmt`](https://crates.io/crates/varlinkfmt)
 - Go to definition
+- Highlight
 - Hover
 - References
 - Rename symbol

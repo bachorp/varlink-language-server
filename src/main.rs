@@ -14,9 +14,10 @@ use auto_lsp::lsp_types::notification::{
     DidOpenTextDocument, DidSaveTextDocument, LogTrace, SetTrace,
 };
 use auto_lsp::lsp_types::request::{
-    Completion, DocumentDiagnosticRequest, DocumentSymbolRequest, FoldingRangeRequest, Formatting,
-    GotoDefinition, HoverRequest, PrepareRenameRequest, References, Rename, SelectionRangeRequest,
-    SemanticTokensFullRequest, WorkspaceDiagnosticRequest, WorkspaceSymbolRequest,
+    Completion, DocumentDiagnosticRequest, DocumentHighlightRequest, DocumentSymbolRequest,
+    FoldingRangeRequest, Formatting, GotoDefinition, HoverRequest, PrepareRenameRequest,
+    References, Rename, SelectionRangeRequest, SemanticTokensFullRequest,
+    WorkspaceDiagnosticRequest, WorkspaceSymbolRequest,
 };
 use auto_lsp::lsp_types::{self, HoverProviderCapability, OneOf};
 use auto_lsp::lsp_types::{DiagnosticOptions, DiagnosticServerCapabilities};
@@ -33,6 +34,7 @@ use varlink_language_server::capabilities::diagnostics::{diagnostics, workspace_
 use varlink_language_server::capabilities::folding_range::folding_range;
 use varlink_language_server::capabilities::formatting::formatting;
 use varlink_language_server::capabilities::goto_definition::goto_definition;
+use varlink_language_server::capabilities::highlight::highlight;
 use varlink_language_server::capabilities::hover::hover;
 use varlink_language_server::capabilities::references::references;
 use varlink_language_server::capabilities::rename::{prepare_rename, rename};
@@ -78,6 +80,7 @@ fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
                 workspace_symbol_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(crate::OneOf::Left(true)),
                 references_provider: Some(lsp_types::OneOf::Left(true)),
+                document_highlight_provider: Some(OneOf::Left(true)),
                 hover_provider: Some(HoverProviderCapability::Simple(true)),
                 document_formatting_provider: Some(OneOf::Left(true)),
                 folding_range_provider: Some(lsp_types::FoldingRangeProviderCapability::Simple(
@@ -158,6 +161,7 @@ fn on_requests<Db: BaseDatabase + Clone + RefUnwindSafe>(
         .on::<DocumentSymbolRequest, _>(ThreadIntent::Worker, document_symbols)
         .on::<FoldingRangeRequest, _>(ThreadIntent::Worker, folding_range)
         .on::<Formatting, _>(ThreadIntent::Worker, formatting)
+        .on::<DocumentHighlightRequest, _>(ThreadIntent::Worker, highlight)
         .on::<GotoDefinition, _>(ThreadIntent::Worker, goto_definition)
         .on::<HoverRequest, _>(ThreadIntent::Worker, hover)
         .on::<PrepareRenameRequest, _>(ThreadIntent::Worker, prepare_rename)

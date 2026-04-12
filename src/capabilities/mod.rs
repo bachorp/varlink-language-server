@@ -4,6 +4,7 @@ pub mod symbols;
 pub mod folding_range;
 pub mod formatting;
 pub mod goto_definition;
+pub mod highlight;
 pub mod hover;
 pub mod references;
 pub mod rename;
