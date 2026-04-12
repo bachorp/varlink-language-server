@@ -89,6 +89,7 @@ pub fn rename(
 
     let edits = {
         if let Some(interface_name) = walk_up::<InterfaceName>(ast, leaf) {
+            // FIXME: `get_lsp_range` does not respect the encoding (also other places)
             vec![interface_name.get_lsp_range()]
         } else if let Some(error_name) = walk_up::<ErrorName>(ast, leaf) {
             vec![error_name.get_lsp_range()]

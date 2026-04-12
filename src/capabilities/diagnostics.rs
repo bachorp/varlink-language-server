@@ -30,7 +30,8 @@ fn get_parse_errors(db: &impl BaseDatabase, file: File) -> Vec<Diagnostic> {
             } else {
                 error_positions.insert(position);
                 Some(Diagnostic {
-                    message: "syntax error".to_string(),
+                    // TODO: Adjust position by encoding
+                    message: "syntax error".to_string(), // TODO: We might want to keep missing errors
                     code: None,
                     ..d.into()
                 })

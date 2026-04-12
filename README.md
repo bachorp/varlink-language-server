@@ -20,5 +20,5 @@ Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](ht
 
 ## Known Issues
 
-- https://github.com/adclz/auto-lsp/issues/47
-- https://github.com/adclz/auto-lsp/issues/39#issuecomment-4114707968
+- Works only on files with extension `.varlink` (https://github.com/adclz/auto-lsp/issues/47)
+- Wrong positions might be reported on lines that contain special characters (https://github.com/adclz/auto-lsp/issues/39#issuecomment-4114707968)

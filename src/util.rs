@@ -11,7 +11,7 @@ use crate::capabilities::semantic_tokens::SUPPORTED_TYPES;
 
 pub fn get_file_from_db(uri: &Url, db: &impl BaseDatabase) -> Result<File, anyhow::Error> {
     db.get_file(uri)
-        .ok_or_else(|| anyhow::format_err!("Unknown file: {}", uri))
+        .ok_or(anyhow::format_err!("Unknown file: {}", uri))
 }
 
 pub fn get_token_index(type_: SemanticTokenType) -> u32 {

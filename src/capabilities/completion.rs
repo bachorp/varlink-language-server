@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use auto_lsp::{
-    anyhow,
+    anyhow::{self},
     core::ast::AstNode,
     default::db::{BaseDatabase, tracked::get_ast},
     lsp_types::{
@@ -70,13 +70,25 @@ pub fn completion(
     let ast = get_ast(db, file);
     let document_bytes = file.document(db).as_bytes();
 
+    // FIXME: We have to respect the encoding here
     let pos = params.text_document_position.position;
-    let line = file.document(db).texter.get_row(pos.line as usize).unwrap();
+    let line = file
+        .document(db)
+        .texter
+        .get_row(pos.line as usize)
+        // Trim the single typed character
+        .and_then(|line| line.get(0..(pos.character as usize).saturating_sub(1)))
+        .ok_or(anyhow::format_err!(
+            "Invalid position `{}:{}` in document `{}`",
+            pos.line,
+            pos.character,
+            params.text_document_position.text_document.uri
+        ))?
+        .trim();
 
     let mut items: Vec<CompletionItem> = Vec::new();
-    let line_before = &line[0..pos.character as usize - 1].trim(); // Trim the single typed character
     // We are on a blank line
-    if *line_before == "" {
+    if line == "" {
         for kind in DECLARATIONS {
             items.push(CompletionItem {
                 label: kind.label.to_string(),
@@ -90,10 +102,10 @@ pub fn completion(
 
     // NOTE: Does not work across lines (would be allowed for `:`)
     if !line.contains("#")
-        && (line_before.ends_with(":")
-            || line_before.ends_with("?")
-            || line_before.ends_with("[]")
-            || line_before.ends_with("[string]"))
+        && (line.ends_with(":")
+            || line.ends_with("?")
+            || line.ends_with("[]")
+            || line.ends_with("[string]"))
     {
         for kind in BUILTIN_TYPES {
             items.push(CompletionItem {

@@ -31,6 +31,7 @@ fn _symbols(db: &impl BaseDatabase, file: &File) -> Vec<DocumentSymbol> {
             ]
         );
     });
+
     builder.finalize()
 }
 

@@ -20,18 +20,18 @@ use crate::{
 
 // It would be great to utilize partial formatting for this but this is hard to achieve with Topiary
 fn fix_indent(raw: &str, level: usize) -> String {
-    if raw
-        .lines()
-        .skip(1)
-        .all(|line| line[..level].chars().all(|char| char.is_whitespace()))
-    {
+    if raw.lines().skip(1).all(|line| {
+        line.get(..level)
+            .map(|prefix| prefix.chars().all(|char| char.is_whitespace()))
+            .unwrap_or(false)
+    }) {
         raw.lines()
             .enumerate()
             .map(|(i, line)| if i == 0 { line } else { &line[level..] })
             .collect::<Vec<_>>()
             .join("\n")
     } else {
-        raw.to_string()
+        " ".repeat(level) + raw
     }
 }
 
@@ -40,9 +40,11 @@ fn get_doc(text: &Text, pos: Position) -> String {
     if !text
         .get_row(pos.line as usize)
         .unwrap()
+        // * FIXME: This does not respect the encoding (also other places)..
         .chars()
         .take(c)
         .all(|c| c.is_whitespace())
+    // ..fix by allowing only ' ' and \t here
     {
         return "".into();
     }
