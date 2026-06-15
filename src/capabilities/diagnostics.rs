@@ -5,7 +5,7 @@ use auto_lsp::core::document::Document;
 use auto_lsp::core::errors::ParseErrorAccumulator;
 use auto_lsp::default::db::BaseDatabase;
 use auto_lsp::default::db::file::File;
-use auto_lsp::default::db::tracked::{get_ast};
+use auto_lsp::default::db::tracked::get_ast;
 use auto_lsp::lsp_types::{
     Diagnostic, DiagnosticRelatedInformation, DiagnosticSeverity, DocumentDiagnosticParams,
     DocumentDiagnosticReport, DocumentDiagnosticReportResult, FullDocumentDiagnosticReport,
@@ -18,22 +18,22 @@ use auto_lsp::{anyhow, lsp_types};
 use crate::ast::{Enum, Error, Method, Struct, Typedef, Typeref};
 use crate::util::get_file_from_db;
 
-fn get_parse_errors(db: &impl BaseDatabase, file: File) -> Vec<Diagnostic> {
+fn get_parse_errors(db: &impl BaseDatabase, file: File, document: &Document) -> Vec<Diagnostic> {
     let mut error_positions: BTreeSet<(Position, Position)> = BTreeSet::new();
     get_ast::accumulated::<ParseErrorAccumulator>(db, file)
         .into_iter()
         .filter_map(|d| {
-            let diagnostic: Diagnostic = d.into();
+            // Note: `MISSING` errors are not differentiated (and therefore deduplicated)
+            let diagnostic: Diagnostic = d.to_lsp_diagnostic(document).unwrap();
             let position = (diagnostic.range.start, diagnostic.range.end);
             if error_positions.contains(&position) {
                 None
             } else {
                 error_positions.insert(position);
                 Some(Diagnostic {
-                    // TODO: Adjust position by encoding
-                    message: "syntax error".to_string(), // TODO: We might want to keep missing errors
+                    message: "syntax error".to_string(),
                     code: None,
-                    ..d.into()
+                    ..diagnostic
                 })
             }
         })
@@ -42,7 +42,6 @@ fn get_parse_errors(db: &impl BaseDatabase, file: File) -> Vec<Diagnostic> {
 
 fn check_trailing_newline(document: &Document) -> Vec<Diagnostic> {
     if document.texter.text.chars().last().map(|last| last == '\n') == Some(false) {
-        // FIXME: encoding is off
         let end_of_document = Position {
             line: usize::from(document.texter.br_indexes.row_count()) as u32,
             character: 0,
@@ -151,7 +150,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
     let document_bytes = document.as_bytes();
 
     let mut items: Vec<Diagnostic> = Vec::new();
-    items.append(&mut get_parse_errors(db, *file));
+    items.append(&mut get_parse_errors(db, *file, document));
     items.append(&mut check_trailing_newline(document));
 
     let typedefs = {
@@ -162,7 +161,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
                 result
                     .entry(name.get_text(document_bytes).unwrap())
                     .or_insert_with(Vec::new)
-                    .push(name.get_lsp_range());
+                    .push(name.get_lsp_range(document).unwrap());
             }
         });
 
@@ -179,7 +178,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
                 result
                     .entry(name.get_text(document_bytes).unwrap())
                     .or_insert_with(Vec::new)
-                    .push(name.get_lsp_range());
+                    .push(name.get_lsp_range(document).unwrap());
             }
         });
 
@@ -196,7 +195,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
                 result
                     .entry(name.get_text(document_bytes).unwrap())
                     .or_insert_with(Vec::new)
-                    .push(name.get_lsp_range());
+                    .push(name.get_lsp_range(document).unwrap());
             }
         });
 
@@ -213,7 +212,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
                 result
                     .entry(name.get_text(document_bytes).unwrap())
                     .or_insert_with(Vec::new)
-                    .push(name.get_lsp_range());
+                    .push(name.get_lsp_range(document).unwrap());
             }
         });
 
@@ -247,7 +246,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
                 members
                     .entry(name.get_text(document_bytes).unwrap())
                     .or_insert_with(Vec::new)
-                    .push(name.get_lsp_range());
+                    .push(name.get_lsp_range(document).unwrap());
             });
 
             items.append(&mut check_defs("struct field", &members, uri));
@@ -262,7 +261,7 @@ fn _diagnostics(db: &impl BaseDatabase, file: &File) -> Vec<Diagnostic> {
                 members
                     .entry(name.get_text(document_bytes).unwrap())
                     .or_insert_with(Vec::new)
-                    .push(name.get_lsp_range());
+                    .push(name.get_lsp_range(document).unwrap());
             });
 
             items.append(&mut check_defs("enum member", &members, uri));

@@ -16,9 +16,12 @@ pub fn references(
 ) -> anyhow::Result<Option<Vec<Location>>> {
     let file = get_file_from_db(&params.text_document_position.text_document.uri, db)?;
     let ast = get_ast(db, file);
+    let document = file.document(db);
 
-    if let Some(typedef) = capture_at::<Typedef>(ast, params.text_document_position.position) {
-        let document_bytes = file.document(db).as_bytes();
+    if let Some(typedef) =
+        capture_at::<Typedef>(ast, document, params.text_document_position.position)
+    {
+        let document_bytes = document.as_bytes();
         let name = typedef.name.cast(ast).get_text(document_bytes).unwrap();
         let refs: Vec<Location> = ast
             .iter()
@@ -26,7 +29,7 @@ pub fn references(
             .filter_map(|typeref| {
                 if typeref.get_text(document_bytes).unwrap() == name {
                     Some(Location {
-                        range: typeref.get_lsp_range(),
+                        range: typeref.get_lsp_range(document).unwrap(),
                         uri: params.text_document_position.text_document.uri.clone(),
                     })
                 } else {

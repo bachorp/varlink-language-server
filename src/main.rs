@@ -42,12 +42,10 @@ use varlink_language_server::capabilities::symbols::document_symbols;
 
 use varlink_language_server::ast::Interface;
 
-auto_lsp::configure_parsers!(
-    PARSERS,
-    "varlink" => {
-        language: tree_sitter_varlink::LANGUAGE,
-        ast_root: Interface
-    }
+auto_lsp::configure_parser!(
+    VARLINK,
+    language: tree_sitter_varlink::LANGUAGE,
+    ast_root: Interface
 );
 
 fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
@@ -57,7 +55,6 @@ fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
                 name: "varlink-language-server".into(),
                 version: Some(env!("CARGO_PKG_VERSION").into()),
             }),
-            parsers: &PARSERS,
             capabilities: ServerCapabilities {
                 text_document_sync: TEXT_DOCUMENT_SYNC.clone(),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
@@ -130,8 +127,10 @@ fn on_notifications<Db: BaseDatabase + Clone + RefUnwindSafe>(
             Ok(())
         })
         .on_mut::<DidChangeTextDocument, _>(|s, p| Ok(change_text_document(s, p)?))
-        .on_mut::<DidChangeWatchedFiles, _>(|s, p| Ok(changed_watched_files(s, p)?))
-        .on_mut::<DidOpenTextDocument, _>(|s, p| Ok(open_text_document(s, p)?))
+        .on_mut::<DidChangeWatchedFiles, _>(|s, p| {
+            Ok(changed_watched_files(s, p, |_| Some(&*VARLINK))?)
+        })
+        .on_mut::<DidOpenTextDocument, _>(|s, p| Ok(open_text_document(s, p, &*VARLINK)?))
         .on::<DidCloseTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
         .on::<DidSaveTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
         .on::<LogTrace, _>(ThreadIntent::Worker, |_s, _p| Ok(()))

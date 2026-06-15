@@ -1,6 +1,6 @@
 use auto_lsp::{
     anyhow,
-    core::ast::AstNode,
+    core::{ast::AstNode, document::Document},
     default::db::{BaseDatabase, file::File, tracked::ParsedAst},
     lsp_types::{Position, SemanticTokenType, Url},
 };
@@ -21,9 +21,13 @@ pub fn get_token_index(type_: SemanticTokenType) -> u32 {
 // Note that the given nodes are assumed to be ordered by their starting position
 
 // Finds the rightmost leaf at or before the given position
-fn prec_at<'a>(ast: &'a ParsedAst, pos: Position) -> Option<&'a Box<dyn AstNode>> {
+fn prec_at<'a>(
+    ast: &'a ParsedAst,
+    document: &Document,
+    pos: Position,
+) -> Option<&'a Box<dyn AstNode>> {
     let cutoff = ast.partition_point(|p| {
-        let start = p.get_lsp_range().start;
+        let start = p.get_lsp_range(document).unwrap().start;
         (start.line, start.character) <= (pos.line, pos.character)
     });
 
@@ -35,9 +39,13 @@ fn prec_at<'a>(ast: &'a ParsedAst, pos: Position) -> Option<&'a Box<dyn AstNode>
 }
 
 // Finds the leaf at the given position
-pub fn leaf_at<'a>(ast: &'a ParsedAst, pos: Position) -> Option<&'a Box<dyn AstNode>> {
-    prec_at(ast, pos).and_then(|candidate| {
-        let end = candidate.get_lsp_range().end;
+pub fn leaf_at<'a>(
+    ast: &'a ParsedAst,
+    document: &Document,
+    pos: Position,
+) -> Option<&'a Box<dyn AstNode>> {
+    prec_at(ast, document, pos).and_then(|candidate| {
+        let end = candidate.get_lsp_range(document).unwrap().end;
         if (end.line, end.character) > (pos.line, pos.character) {
             Some(candidate)
         } else {
@@ -47,21 +55,27 @@ pub fn leaf_at<'a>(ast: &'a ParsedAst, pos: Position) -> Option<&'a Box<dyn AstN
 }
 
 // Finds the deepest node at the given position
-pub fn most_specific_at<'a>(ast: &'a ParsedAst, pos: Position) -> Option<&'a Box<dyn AstNode>> {
+pub fn most_specific_at<'a>(
+    ast: &'a ParsedAst,
+    document: &Document,
+    pos: Position,
+) -> Option<&'a Box<dyn AstNode>> {
     fn walk_up<'a>(
         nodes: &'a [Box<dyn AstNode>],
+        document: &Document,
         node: &'a Box<dyn AstNode>,
         pos: Position,
     ) -> Option<&'a Box<dyn AstNode>> {
-        let end = node.get_lsp_range().end;
+        let end = node.get_lsp_range(document).unwrap().end;
         if (end.line, end.character) > (pos.line, pos.character) {
             Some(node)
         } else {
-            node.get_parent(nodes).and_then(|p| walk_up(nodes, p, pos))
+            node.get_parent(nodes)
+                .and_then(|p| walk_up(nodes, document, p, pos))
         }
     }
 
-    prec_at(ast, pos).and_then(|candidate| walk_up(ast, candidate, pos))
+    prec_at(ast, document, pos).and_then(|candidate| walk_up(ast, document, candidate, pos))
 }
 
 // Finds the deepest node of some type above the given node
@@ -71,6 +85,10 @@ pub fn walk_up<'a, T: AstNode>(ast: &'a ParsedAst, node: &'a dyn AstNode) -> Opt
 }
 
 // Finds the deepest node of some type at the given position
-pub fn capture_at<'a, T: AstNode>(ast: &'a ParsedAst, pos: Position) -> Option<&'a T> {
-    most_specific_at(ast, pos).and_then(|n| walk_up::<T>(ast, n.lower()))
+pub fn capture_at<'a, T: AstNode>(
+    ast: &'a ParsedAst,
+    document: &Document,
+    pos: Position,
+) -> Option<&'a T> {
+    most_specific_at(ast, document, pos).and_then(|n| walk_up::<T>(ast, n.lower()))
 }

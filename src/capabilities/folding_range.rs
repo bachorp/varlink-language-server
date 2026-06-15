@@ -15,6 +15,7 @@ pub fn folding_range(
 ) -> anyhow::Result<Option<Vec<FoldingRange>>> {
     let file = get_file_from_db(&params.text_document.uri, db)?;
     let ast = get_ast(db, file);
+    let document = file.document(db);
 
     let ranges = ast
         .iter()
@@ -26,7 +27,7 @@ pub fn folding_range(
                 || node.is::<Struct>()
                 || node.is::<Enum>()
             {
-                let range = node.get_lsp_range();
+                let range = node.get_lsp_range(document).unwrap();
                 Some(FoldingRange {
                     start_line: range.start.line,
                     start_character: Some(range.start.character),

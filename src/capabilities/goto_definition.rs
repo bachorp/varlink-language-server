@@ -16,10 +16,14 @@ pub fn goto_definition(
 ) -> anyhow::Result<Option<GotoDefinitionResponse>> {
     let file = get_file_from_db(&params.text_document_position_params.text_document.uri, db)?;
     let ast = get_ast(db, file);
+    let document = file.document(db);
 
-    if let Some(typeref) = capture_at::<Typeref>(ast, params.text_document_position_params.position)
-    {
-        let document_bytes = file.document(db).as_bytes();
+    if let Some(typeref) = capture_at::<Typeref>(
+        ast,
+        document,
+        params.text_document_position_params.position,
+    ) {
+        let document_bytes = document.as_bytes();
         let name = typeref.get_text(document_bytes).unwrap();
         let defs: Vec<Location> = ast
             .iter()
@@ -28,7 +32,7 @@ pub fn goto_definition(
                 let def = typedef.name.cast(ast);
                 if def.get_text(document_bytes).unwrap() == name {
                     Some(Location {
-                        range: def.get_lsp_range(),
+                        range: def.get_lsp_range(document).unwrap(),
                         uri: params
                             .text_document_position_params
                             .text_document

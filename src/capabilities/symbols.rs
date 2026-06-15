@@ -4,6 +4,7 @@ use crate::ast::{Error, InterfaceDeclaration, Method, Typedef};
 use crate::util::get_file_from_db;
 use auto_lsp::core::ast::AstNode;
 use auto_lsp::core::dispatch_once;
+use auto_lsp::core::document::Document;
 use auto_lsp::core::document_symbols_builder::DocumentSymbolsBuilder;
 use auto_lsp::default::db::BaseDatabase;
 use auto_lsp::default::db::file::File;
@@ -24,10 +25,10 @@ fn _symbols(db: &impl BaseDatabase, file: &File) -> Vec<DocumentSymbol> {
         dispatch_once!(
             node.lower(),
             [
-                InterfaceDeclaration => build_document_symbols(&mut builder, ast, document_bytes),
-                Error => build_document_symbols(&mut builder, ast, document_bytes),
-                Typedef => build_document_symbols(&mut builder, ast, document_bytes),
-                Method => build_document_symbols(&mut builder, ast, document_bytes)
+                InterfaceDeclaration => build_document_symbols(&mut builder, ast, doc, document_bytes),
+                Error => build_document_symbols(&mut builder, ast, doc, document_bytes),
+                Typedef => build_document_symbols(&mut builder, ast, doc, document_bytes),
+                Method => build_document_symbols(&mut builder, ast, doc, document_bytes)
             ]
         );
     });
@@ -40,6 +41,7 @@ impl InterfaceDeclaration {
         &self,
         builder: &mut DocumentSymbolsBuilder,
         ast: &ParsedAst,
+        document: &Document,
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast);
@@ -50,8 +52,8 @@ impl InterfaceDeclaration {
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::NAMESPACE,
-            range: self.get_lsp_range(),
-            selection_range: name.get_lsp_range(),
+            range: self.get_lsp_range(document).unwrap(),
+            selection_range: name.get_lsp_range(document).unwrap(),
             tags: None,
             detail: None,
             deprecated: None,
@@ -65,6 +67,7 @@ impl Error {
         &self,
         builder: &mut DocumentSymbolsBuilder,
         ast: &ParsedAst,
+        document: &Document,
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast).children.cast(ast);
@@ -75,8 +78,8 @@ impl Error {
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::EVENT,
-            range: self.get_lsp_range(),
-            selection_range: name.get_lsp_range(),
+            range: self.get_lsp_range(document).unwrap(),
+            selection_range: name.get_lsp_range(document).unwrap(),
             tags: None,
             detail: None,
             deprecated: None,
@@ -90,6 +93,7 @@ impl Method {
         &self,
         builder: &mut DocumentSymbolsBuilder,
         ast: &ParsedAst,
+        document: &Document,
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast).children.cast(ast);
@@ -100,8 +104,8 @@ impl Method {
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::METHOD,
-            range: self.get_lsp_range(),
-            selection_range: name.get_lsp_range(),
+            range: self.get_lsp_range(document).unwrap(),
+            selection_range: name.get_lsp_range(document).unwrap(),
             tags: None,
             detail: None,
             deprecated: None,
@@ -115,6 +119,7 @@ impl Typedef {
         &self,
         builder: &mut DocumentSymbolsBuilder,
         ast: &ParsedAst,
+        document: &Document,
         document_bytes: &[u8],
     ) {
         let name = self.name.cast(ast).children.cast(ast);
@@ -125,8 +130,8 @@ impl Typedef {
         builder.push_symbol(lsp_types::DocumentSymbol {
             name: name.get_text(document_bytes).unwrap().to_string(),
             kind: lsp_types::SymbolKind::CLASS,
-            range: self.get_lsp_range(),
-            selection_range: name.get_lsp_range(),
+            range: self.get_lsp_range(document).unwrap(),
+            selection_range: name.get_lsp_range(document).unwrap(),
             tags: None,
             detail: None,
             deprecated: None,

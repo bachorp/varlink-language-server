@@ -70,7 +70,6 @@ pub fn completion(
     let ast = get_ast(db, file);
     let document_bytes = file.document(db).as_bytes();
 
-    // FIXME: We have to respect the encoding here
     let pos = params.text_document_position.position;
     let line = file
         .document(db)

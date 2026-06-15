@@ -9,7 +9,7 @@ Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](ht
     - Syntax errors
     - Missing/duplicate declarations
 - Completion
-- Formatting via [`varlinkfmt`](https://crates.io/crates/varlinkfmt)
+- Formatting via [`varlinkfmt`](https://github.com/bachorp/varlinkfmt)
 - Go to definition
 - Highlight
 - Hover
@@ -19,8 +19,4 @@ Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](ht
 - Semantic tokens
 - Symbols
 
-## Known Issues and Limitations
-
-- No workspace support (https://github.com/adclz/auto-lsp/issues/47#issuecomment-4231703174)
-- Works only on files with extension `.varlink` (https://github.com/adclz/auto-lsp/issues/47)
-- Wrong positions might be reported on lines that contain special characters (https://github.com/adclz/auto-lsp/issues/39#issuecomment-4114707968)
+No workspace support.

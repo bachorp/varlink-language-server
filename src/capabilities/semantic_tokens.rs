@@ -1,6 +1,6 @@
 use auto_lsp::{
     anyhow,
-    core::{ast::AstNode, dispatch_once, semantic_tokens_builder::SemanticTokensBuilder},
+    core::{ast::AstNode, dispatch_once, document::Document, semantic_tokens_builder::SemanticTokensBuilder},
     default::db::{BaseDatabase, tracked::get_ast},
     define_semantic_token_types,
     lsp_types::{SemanticTokenType, SemanticTokensParams, SemanticTokensResult},
@@ -36,6 +36,7 @@ pub fn semantic_tokens_full(
 ) -> anyhow::Result<Option<SemanticTokensResult>> {
     let file = get_file_from_db(&params.text_document.uri, db)?;
     let ast = get_ast(db, file);
+    let document = file.document(db);
 
     let mut builder = SemanticTokensBuilder::new("".into());
 
@@ -43,25 +44,25 @@ pub fn semantic_tokens_full(
         dispatch_once!(
             node.lower(),
             [
-                Any => push_semantic_token(&mut builder, TYPE),
-                Arrow => push_semantic_token(&mut builder, DECORATOR),
-                Bool => push_semantic_token(&mut builder, TYPE),
-                Comment => push_semantic_token(&mut builder, COMMENT),
-                EnumMemberName => push_semantic_token(&mut builder, ENUM_MEMBER),
-                ErrorName => push_semantic_token(&mut builder, EVENT),
-                Float => push_semantic_token(&mut builder, TYPE),
-                Int => push_semantic_token(&mut builder, TYPE),
-                InterfaceName => push_semantic_token(&mut builder, NAMESPACE),
-                KeywordError => push_semantic_token(&mut builder, KEYWORD),
-                KeywordInterface => push_semantic_token(&mut builder, INTERFACE),
-                KeywordMethod => push_semantic_token(&mut builder, KEYWORD),
-                KeywordType => push_semantic_token(&mut builder, KEYWORD),
-                MethodName => push_semantic_token(&mut builder, METHOD),
-                Object => push_semantic_token(&mut builder, TYPE),
-                String => push_semantic_token(&mut builder, TYPE),
-                StructFieldName => push_semantic_token(&mut builder, PROPERTY),
-                TypedefName => push_semantic_token(&mut builder, TYPE),
-                Typeref => push_semantic_token(&mut builder, TYPE)
+                Any => push_semantic_token(&mut builder, document, TYPE),
+                Arrow => push_semantic_token(&mut builder, document, DECORATOR),
+                Bool => push_semantic_token(&mut builder, document, TYPE),
+                Comment => push_semantic_token(&mut builder, document, COMMENT),
+                EnumMemberName => push_semantic_token(&mut builder, document, ENUM_MEMBER),
+                ErrorName => push_semantic_token(&mut builder, document, EVENT),
+                Float => push_semantic_token(&mut builder, document, TYPE),
+                Int => push_semantic_token(&mut builder, document, TYPE),
+                InterfaceName => push_semantic_token(&mut builder, document, NAMESPACE),
+                KeywordError => push_semantic_token(&mut builder, document, KEYWORD),
+                KeywordInterface => push_semantic_token(&mut builder, document, INTERFACE),
+                KeywordMethod => push_semantic_token(&mut builder, document, KEYWORD),
+                KeywordType => push_semantic_token(&mut builder, document, KEYWORD),
+                MethodName => push_semantic_token(&mut builder, document, METHOD),
+                Object => push_semantic_token(&mut builder, document, TYPE),
+                String => push_semantic_token(&mut builder, document, TYPE),
+                StructFieldName => push_semantic_token(&mut builder, document, PROPERTY),
+                TypedefName => push_semantic_token(&mut builder, document, TYPE),
+                Typeref => push_semantic_token(&mut builder, document, TYPE)
             ]
         );
     });
@@ -70,10 +71,10 @@ pub fn semantic_tokens_full(
 }
 
 trait SemanticToken {
-    fn push_semantic_token(&self, builder: &mut SemanticTokensBuilder, type_: SemanticTokenType);
+    fn push_semantic_token(&self, builder: &mut SemanticTokensBuilder, document: &Document, type_: SemanticTokenType);
 }
 impl<T: AstNode> SemanticToken for T {
-    fn push_semantic_token(&self, builder: &mut SemanticTokensBuilder, type_: SemanticTokenType) {
-        builder.push(self.get_lsp_range(), get_token_index(type_), 0);
+    fn push_semantic_token(&self, builder: &mut SemanticTokensBuilder, document: &Document, type_: SemanticTokenType) {
+        builder.push(self.get_lsp_range(document).unwrap(), get_token_index(type_), 0);
     }
 }

@@ -1,6 +1,6 @@
 use auto_lsp::{
     anyhow::{self, Ok},
-    core::ast::AstNode,
+    core::{ast::AstNode, document::Document},
     default::db::{
         BaseDatabase,
         tracked::{ParsedAst, get_ast},
@@ -18,11 +18,15 @@ use crate::{
     util::{get_file_from_db, leaf_at, walk_up},
 };
 
+fn is_whitespace(c: char) -> bool {
+    c == ' ' || c == '\t'
+}
+
 // It would be great to utilize partial formatting for this but this is hard to achieve with Topiary
 fn fix_indent(raw: &str, level: usize) -> String {
     if raw.lines().skip(1).all(|line| {
         line.get(..level)
-            .map(|prefix| prefix.chars().all(|char| char.is_whitespace()))
+            .map(|prefix| prefix.chars().all(is_whitespace))
             .unwrap_or(false)
     }) {
         raw.lines()
@@ -35,31 +39,31 @@ fn fix_indent(raw: &str, level: usize) -> String {
     }
 }
 
-fn get_doc(text: &Text, pos: Position) -> String {
+fn get_doc(text: &Text, pos: Position) -> anyhow::Result<String> {
     let c = pos.character as usize;
     if !text
         .get_row(pos.line as usize)
-        .unwrap()
-        // * FIXME: This does not respect the encoding (also other places)..
+        .ok_or_else(|| {
+            anyhow::format_err!("position {}:{} is out of range", pos.line, pos.character)
+        })?
         .chars()
         .take(c)
-        .all(|c| c.is_whitespace())
-    // ..fix by allowing only ' ' and \t here
+        .all(is_whitespace)
     {
-        return "".into();
+        return Ok("".into());
     }
 
     let comments_rev: Vec<&str> = (0..pos.line)
         .rev()
         .map(|l| text.get_row(l as usize).unwrap())
         .take_while(|line| {
-            line.chars().take(c).all(|c| c.is_whitespace()) && line.chars().nth(c) == Some('#')
+            line.chars().take(c).all(is_whitespace) && line.chars().nth(c) == Some('#')
         })
         .map(|line| &line[c..])
         .collect();
 
     if comments_rev.is_empty() {
-        return "".into();
+        return Ok("".into());
     }
 
     let mut value = "\n\n---\n".to_string();
@@ -73,7 +77,7 @@ fn get_doc(text: &Text, pos: Position) -> String {
         value.push('\n');
     }
 
-    value
+    Ok(value)
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -84,12 +88,13 @@ struct MkHoverOptions {
 
 fn mk_hover(
     target: &dyn AstNode,
+    document: &Document,
     document_bytes: &[u8],
     text: &Text,
     options: MkHoverOptions,
-) -> (Range, String) {
-    (
-        target.get_lsp_range(),
+) -> anyhow::Result<(Range, String)> {
+    Ok((
+        target.get_lsp_range(document).unwrap(),
         format!(
             "```varlink\n{}{}{}\n```{}",
             if options.bracket { "(" } else { "" },
@@ -99,23 +104,25 @@ fn mk_hover(
             ),
             if options.bracket { ")" } else { "" },
             if options.doc {
-                get_doc(text, target.get_start_position())
+                get_doc(text, target.get_start_position())?
             } else {
                 "".into()
             }
         ),
-    )
+    ))
 }
 
 impl StructFieldName {
     fn get_hover<'a>(
         &'a self,
         ast: &'a ParsedAst,
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         mk_hover(
             walk_up::<StructField>(ast, self).unwrap(),
+            document,
             document_bytes,
             text,
             MkHoverOptions {
@@ -131,11 +138,13 @@ impl EnumMemberName {
     fn get_hover<'a>(
         &'a self,
         _nodes: &'a [Box<dyn AstNode>],
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         mk_hover(
             self,
+            document,
             document_bytes,
             text,
             MkHoverOptions {
@@ -151,11 +160,13 @@ impl InterfaceName {
     fn get_hover<'a>(
         &'a self,
         ast: &'a ParsedAst,
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         mk_hover(
             walk_up::<InterfaceDeclaration>(ast, self).unwrap(),
+            document,
             document_bytes,
             text,
             MkHoverOptions {
@@ -170,11 +181,13 @@ impl TypedefName {
     fn get_hover<'a>(
         &'a self,
         ast: &'a ParsedAst,
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         mk_hover(
             walk_up::<Typedef>(ast, self).unwrap(),
+            document,
             document_bytes,
             text,
             MkHoverOptions {
@@ -189,11 +202,13 @@ impl ErrorName {
     fn get_hover<'a>(
         &'a self,
         ast: &'a ParsedAst,
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         mk_hover(
             walk_up::<Error>(ast, self).unwrap(),
+            document,
             document_bytes,
             text,
             MkHoverOptions {
@@ -208,11 +223,13 @@ impl MethodName {
     fn get_hover<'a>(
         &'a self,
         ast: &'a ParsedAst,
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         mk_hover(
             walk_up::<Method>(ast, self).unwrap(),
+            document,
             document_bytes,
             text,
             MkHoverOptions {
@@ -229,10 +246,17 @@ macro_rules! implement_hover {
             fn get_hover<'a>(
                 &'a self,
                 _ast: &'a ParsedAst,
+                document: &Document,
                 document_bytes: &'a [u8],
                 text: &Text,
-            ) -> (Range, String) {
-                mk_hover(self, document_bytes, text, MkHoverOptions::default())
+            ) -> anyhow::Result<(Range, String)> {
+                mk_hover(
+                    self,
+                    document,
+                    document_bytes,
+                    text,
+                    MkHoverOptions::default(),
+                )
             }
         }
     };
@@ -253,9 +277,10 @@ impl Typeref {
     fn get_hover<'a>(
         &'a self,
         ast: &'a ParsedAst,
+        document: &Document,
         document_bytes: &'a [u8],
         text: &Text,
-    ) -> (Range, String) {
+    ) -> anyhow::Result<(Range, String)> {
         let name = self.get_text(document_bytes).unwrap();
         let def = {
             let mut def = None;
@@ -276,15 +301,17 @@ impl Typeref {
         };
 
         if let Some(def) = def {
-            def.name.cast(ast).get_hover(ast, document_bytes, text)
+            def.name
+                .cast(ast)
+                .get_hover(ast, document, document_bytes, text)
         } else {
-            (
-                self.get_lsp_range(),
+            Ok((
+                self.get_lsp_range(document).unwrap(),
                 format!(
                     "```varlink\n{}\n```",
                     self.get_text(document_bytes).unwrap()
                 ),
-            )
+            ))
         }
     }
 }
@@ -292,55 +319,56 @@ impl Typeref {
 pub fn hover(db: &impl BaseDatabase, params: HoverParams) -> anyhow::Result<Option<Hover>> {
     let file = get_file_from_db(&params.text_document_position_params.text_document.uri, db)?;
     let ast = get_ast(db, file);
-    let document_bytes = file.document(db).as_bytes();
-    let text = &file.document(db).texter;
+    let document = file.document(db);
+    let document_bytes = document.as_bytes();
+    let text = &document.texter;
 
-    let Some(leaf) = leaf_at(ast, params.text_document_position_params.position) else {
+    let Some(leaf) = leaf_at(ast, document, params.text_document_position_params.position) else {
         return Ok(None);
     };
     let leaf = leaf.lower();
 
     let hover = {
         if let Some(x) = walk_up::<InterfaceName>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<TypedefName>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<ErrorName>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<MethodName>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<StructFieldName>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<EnumMemberName>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<Bool>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<Int>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<Float>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<ast::String>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<Object>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<Any>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<KeywordInterface>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<KeywordError>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<KeywordMethod>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<KeywordType>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else if let Some(x) = walk_up::<Typeref>(ast, leaf) {
-            Some(x.get_hover(ast, document_bytes, text))
+            Some(x.get_hover(ast, document, document_bytes, text))
         } else {
             None
         }
     };
 
-    Ok(hover.map(|(range, value)| Hover {
+    Ok(hover.transpose()?.map(|(range, value)| Hover {
         contents: HoverContents::Markup(MarkupContent {
             kind: MarkupKind::Markdown,
             value,
