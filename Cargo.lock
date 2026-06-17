@@ -1563,6 +1563,7 @@ version = "0.1.1"
 dependencies = [
  "auto-lsp",
  "auto-lsp-codegen",
+ "serde_json",
  "tree-sitter-varlink",
  "varlinkfmt-core",
 ]
