@@ -1,7 +1,6 @@
 use auto_lsp::{
     anyhow,
-    core::errors::ParseErrorAccumulator,
-    default::db::{BaseDatabase, tracked::get_ast},
+    default::db::BaseDatabase,
     lsp_types::{DocumentFormattingParams, Position, Range, TextEdit},
 };
 use varlinkfmt_core::{Indent, formatter_tree, mk_language};
@@ -13,15 +12,6 @@ pub fn formatting(
     params: DocumentFormattingParams,
 ) -> anyhow::Result<Option<Vec<TextEdit>>> {
     let file = get_file_from_db(&params.text_document.uri, db)?;
-    if get_ast::accumulated::<ParseErrorAccumulator>(db, file)
-        .into_iter()
-        .peekable()
-        .peek()
-        .is_some()
-    {
-        return Ok(None);
-    }
-
     let document = file.document(db);
 
     let mut output = Vec::new();
