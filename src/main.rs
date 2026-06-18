@@ -8,7 +8,7 @@ use auto_lsp::lsp_server::{self, Connection};
 use auto_lsp::lsp_types::ServerCapabilities;
 use auto_lsp::lsp_types::notification::{
     Cancel, DidChangeTextDocument, DidChangeWatchedFiles, DidCloseTextDocument,
-    DidOpenTextDocument, DidSaveTextDocument, LogTrace, SetTrace,
+    DidOpenTextDocument, DidSaveTextDocument, SetTrace,
 };
 use auto_lsp::lsp_types::request::{
     Completion, DocumentDiagnosticRequest, DocumentHighlightRequest, DocumentSymbolRequest,
@@ -132,8 +132,7 @@ fn on_notifications<Db: BaseDatabase + Clone + RefUnwindSafe>(
         })
         .on_mut::<DidOpenTextDocument, _>(|s, p| Ok(open_text_document(s, p, &*VARLINK)?))
         .on::<DidCloseTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
-        .on::<DidSaveTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
-        .on::<LogTrace, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
+        .on::<DidSaveTextDocument, _>(ThreadIntent::Worker, |_s, _p| Ok(())) // TODO
         .on::<SetTrace, _>(ThreadIntent::Worker, |_s, _p| Ok(()))
 }
 
