@@ -1,9 +1,12 @@
 use auto_lsp::anyhow::{self};
 use auto_lsp::default::db::{BaseDatabase, BaseDb};
-use auto_lsp::default::server::capabilities::{TEXT_DOCUMENT_SYNC, semantic_tokens_provider};
+use auto_lsp::default::server::capabilities::{
+    TEXT_DOCUMENT_SYNC, WORKSPACE_PROVIDER, semantic_tokens_provider,
+};
 use auto_lsp::default::server::file_events::{
     change_text_document, changed_watched_files, open_text_document,
 };
+use auto_lsp::default::server::workspace_init::WorkspaceInit;
 use auto_lsp::lsp_server::{self, Connection};
 use auto_lsp::lsp_types::ServerCapabilities;
 use auto_lsp::lsp_types::notification::{
@@ -14,9 +17,13 @@ use auto_lsp::lsp_types::request::{
     Completion, DocumentDiagnosticRequest, DocumentHighlightRequest, DocumentSymbolRequest,
     FoldingRangeRequest, Formatting, GotoDefinition, HoverRequest, PrepareRenameRequest,
     References, Rename, SelectionRangeRequest, SemanticTokensFullRequest,
+    WorkspaceDiagnosticRequest, WorkspaceSymbolRequest,
 };
 use auto_lsp::lsp_types::{self, HoverProviderCapability, OneOf};
-use auto_lsp::lsp_types::{DiagnosticOptions, DiagnosticServerCapabilities};
+use auto_lsp::lsp_types::{
+    DiagnosticOptions, DiagnosticServerCapabilities, DidChangeWatchedFilesRegistrationOptions,
+    FileSystemWatcher, GlobPattern, Registration, RegistrationParams,
+};
 use auto_lsp::server::Session;
 use auto_lsp::server::notification_registry::NotificationRegistry;
 use auto_lsp::server::options::InitOptions;
@@ -26,7 +33,7 @@ use lsp_types::ServerInfo;
 use std::error::Error;
 use std::panic::RefUnwindSafe;
 use varlink_language_server::capabilities::completion::completion;
-use varlink_language_server::capabilities::diagnostics::diagnostics;
+use varlink_language_server::capabilities::diagnostics::{diagnostics, workspace_diagnostics};
 use varlink_language_server::capabilities::folding_range::folding_range;
 use varlink_language_server::capabilities::formatting::formatting;
 use varlink_language_server::capabilities::goto_definition::goto_definition;
@@ -38,7 +45,7 @@ use varlink_language_server::capabilities::selection_range::selection_range;
 use varlink_language_server::capabilities::semantic_tokens::{
     SUPPORTED_TYPES, semantic_tokens_full,
 };
-use varlink_language_server::capabilities::symbols::document_symbols;
+use varlink_language_server::capabilities::symbols::{document_symbols, workspace_symbols};
 
 use varlink_language_server::ast::Interface;
 
@@ -49,7 +56,7 @@ auto_lsp::configure_parser!(
 );
 
 fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
-    let (session, _params) = Session::create(
+    let (mut session, params) = Session::create(
         InitOptions {
             server_info: Some(ServerInfo {
                 name: "varlink-language-server".into(),
@@ -59,6 +66,7 @@ fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
                 text_document_sync: TEXT_DOCUMENT_SYNC.clone(),
                 diagnostic_provider: Some(DiagnosticServerCapabilities::Options(
                     DiagnosticOptions {
+                        workspace_diagnostics: true,
                         ..Default::default()
                     },
                 )),
@@ -68,6 +76,7 @@ fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
                     None,
                 ),
                 document_symbol_provider: Some(OneOf::Left(true)),
+                workspace_symbol_provider: Some(OneOf::Left(true)),
                 definition_provider: Some(crate::OneOf::Left(true)),
                 references_provider: Some(lsp_types::OneOf::Left(true)),
                 document_highlight_provider: Some(OneOf::Left(true)),
@@ -86,6 +95,7 @@ fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
                 completion_provider: Some(lsp_types::CompletionOptions {
                     ..Default::default()
                 }),
+                workspace: WORKSPACE_PROVIDER.clone(),
                 ..Default::default()
             },
         },
@@ -93,8 +103,43 @@ fn main_loop(connection: Connection, db: BaseDb) -> anyhow::Result<()> {
         db,
     )?;
 
+    session
+        .connection
+        .sender
+        .send(lsp_server::Message::Request(lsp_server::Request::new(
+            0.into(),
+            "client/registerCapability".into(),
+            RegistrationParams {
+                registrations: vec![Registration {
+                    id: "varlink-watch".into(),
+                    method: "workspace/didChangeWatchedFiles".into(),
+                    register_options: Some(serde_json::to_value(
+                        DidChangeWatchedFilesRegistrationOptions {
+                            watchers: vec![FileSystemWatcher {
+                                glob_pattern: GlobPattern::String("**/*.varlink".into()),
+                                kind: None,
+                            }],
+                        },
+                    )?),
+                }],
+            },
+        )))?;
+
     let mut request_registry = RequestRegistry::<BaseDb>::default();
     let mut notification_registry = NotificationRegistry::<BaseDb>::default();
+    let init_results = session.init_workspace(params, |entry| {
+        entry.path().extension().and_then(|extension| {
+            if extension == "varlink" {
+                Some(&*VARLINK)
+            } else {
+                None
+            }
+        })
+    });
+
+    init_results.into_iter().for_each(|err| {
+        eprintln!("{}", err);
+    });
 
     session.main_loop(
         on_requests(&mut request_registry),
@@ -153,4 +198,6 @@ fn on_requests<Db: BaseDatabase + Clone + RefUnwindSafe>(
         .on::<Rename, _>(ThreadIntent::Worker, rename)
         .on::<SelectionRangeRequest, _>(ThreadIntent::Worker, selection_range)
         .on::<SemanticTokensFullRequest, _>(ThreadIntent::Worker, semantic_tokens_full)
+        .on::<WorkspaceDiagnosticRequest, _>(ThreadIntent::Worker, workspace_diagnostics)
+        .on::<WorkspaceSymbolRequest, _>(ThreadIntent::Worker, workspace_symbols)
 }

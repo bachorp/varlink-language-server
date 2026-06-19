@@ -9,6 +9,7 @@ edition = "2024"
 
 [dependencies]
 auto-lsp = { version = "0.6.2", features = ["wasm", "lsp_server"] }
+serde_json = "1"
 tree-sitter-varlink = "0.6"
 varlinkfmt-core = "0.4"
 
