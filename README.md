@@ -16,6 +16,7 @@ Using [Auto LSP](https://github.com/adclz/auto-lsp) and [tree-sitter-varlink](ht
 - References
 - Rename symbol
 - Selection range
+- Folding range
 - Semantic tokens
 - Symbols
 
